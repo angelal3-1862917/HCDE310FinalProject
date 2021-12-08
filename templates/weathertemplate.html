@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{page_title}}</title>
+    <style>
+		body{font-family:Helvetica,Arial,sans-serif;font-size:0.8em;}
+        .forecast{
+			float:left;
+			text-align:left;
+            max-width:30em;
+            height:44em; overflow:hidden;
+            margin-bottom:1em;margin-right:2em;
+            background:#efefff;
+    	}
+        .forecast td{vertical-align:top}
+	</style>
+</head>
+<body>
+<form action = "wresponse" method = "get">
+	<label for = "weather">Please enter your city:</label>
+	<input type = "text" id = "weather" name = "weather" /><br />
+	<button type = "submit"> Submit </button>
+</form>
+{% if prompt %}
+<div class = "formtitle">{{prompt}}</div>
+{% endif %}
+{% if answer %}
+<br></br>
+<div class = "answerpage">{{answer}}</div>
+{% endif %}
+</body></html>
