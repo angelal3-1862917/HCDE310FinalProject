@@ -1,11 +1,76 @@
 import urllib.request, urllib.error, urllib.parse, json, webbrowser
+from flask import Flask, render_template, request
 
+from spotifysecrets import CLIENT_ID, CLIENT_SECRET
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def main_handler():
+    app.logger.info("In MainHandler")
+    return render_template("weathertemplate.html", page_title="Weather Form")
 
 
 """Method to actually handle authorization"""
 
-# Note: I put my client id and client secret in secrets.py
-# and told git to ignore that file. You should too.
+
+### Utility functions you may want to use
+def pretty(obj):
+    return json.dumps(obj, sort_keys=True, indent=2)
+
+
+def safe_get(url):
+    try:
+        return urllib.request.urlopen(url)
+    except urllib.error.HTTPError as e:
+        print("The server couldn't fulfill the request.")
+        print("Error code: ", e.code)
+    except urllib.error.URLError as e:
+        print("We failed to reach a server")
+        print("Reason: ", e.reason)
+    return None
+
+
+def get_weather_data(baseurl='http://api.weatherapi.com/v1', k="cdcdc165a33343d9810205011211711", city=None):
+    paramstr = {"key": k, "q": city}
+    wrequest = baseurl + "/current.json" + "?" + urllib.parse.urlencode(paramstr)
+    result = urllib.request.urlopen(wrequest).read()
+    dict = json.loads(result)
+    return (dict)
+
+
+print(pretty(get_weather_data(city="Seattle")))
+
+forecastdict = {"forecasts": {}}
+
+
+# cities = {"Seattle", "Taipei", "New York City"}
+# print_weather(cities)
+#
+# for loc in cities:
+#     llstring = "%s" % loc
+#     forecast = get_weather_data(city=llstring)
+#
+#     if forecast is not None:
+#         forecastdict["forecasts"][loc] = forecast["current"]["temp_f"]
+
+def print_weather(cities={}):
+    for c in cities:
+        dict = get_weather_data(city=c)
+        return (dict["location"]["name"] + " temperature on %s: " % str(dict["location"]["localtime"]) + str(
+            dict["current"]["temp_f"]))
+
+
+# locinfo = json.load(open("locinfo.json", "r"))
+# for loc in cities:
+#    llstring = "%s"%loc
+#    if llstring not in locinfo:
+#        locinfo[llstring] = get_weather_data(city=loc)
+
+# json.dump(locinfo, open("locinfo.json", "w"))
+
+
 
 class spotiClient():
     # I'm going to create a client class to handle requests to spotify
@@ -21,7 +86,6 @@ class spotiClient():
 
         # Note: I put my client id and client secret in secrets.py
         # and told git to ignore that file. You should too.
-        from secrets import CLIENT_ID, CLIENT_SECRET
         import base64
 
         # Following documentation in
@@ -96,7 +160,8 @@ class spotiClient():
         # again, I should some error handling
         return json.load(resp)
 
-class track():
+
+class Track:
 
     def __init__(self, track_dict):
         self.id = track_dict['id']
@@ -113,7 +178,6 @@ class track():
 
         # Note: I put my client id and client secret in secrets.py
         # and told git to ignore that file. You should too.
-        from secrets import CLIENT_ID, CLIENT_SECRET
         import base64
 
         # Following documentation in
@@ -164,122 +228,99 @@ class track():
         return resp_dict['track']['tempo']
 
 
+def search_by_genre(genre):
+    sclient = spotiClient()
+    searchresult = sclient.apiRequest(params={'q': 'genre:' + genre, 'type': 'track', 'limit': 17})
+    return searchresult['tracks']['items']
 
-if __name__ == "__main__":
-
-    ### Utility functions you may want to use
-    def pretty(obj):
-        return json.dumps(obj, sort_keys=True, indent=2)
-
-
-    def safe_get(url):
-        try:
-            return urllib.request.urlopen(url)
-        except urllib.error.HTTPError as e:
-            print("The server couldn't fulfill the request.")
-            print("Error code: ", e.code)
-        except urllib.error.URLError as e:
-            print("We failed to reach a server")
-            print("Reason: ", e.reason)
-        return None
-
-
-    def get_weather_data(baseurl='http://api.weatherapi.com/v1', k="cdcdc165a33343d9810205011211711", city=None):
-        paramstr = {"key": k, "q": city}
-        wrequest = baseurl + "/current.json" + "?" + urllib.parse.urlencode(paramstr)
-        result = urllib.request.urlopen(wrequest).read()
-        dict = json.loads(result)
-        return (dict)
-
-
-    print(pretty(get_weather_data(city="Seattle")))
-
-
-    def print_weather(cities={}):
-        for c in cities:
-            dict = get_weather_data(city=c)
-            print(dict["location"]["name"] + " temperature on %s: " % str(dict["location"]["localtime"]) + str(
-                dict["current"]["temp_f"]))
-
-
-    cities = {"Seattle", "Taipei", "New York City"}
-    print_weather(cities)
-
-    # locinfo = json.load(open("locinfo.json", "r"))
-    # for loc in cities:
-    #    llstring = "%s"%loc
-    #    if llstring not in locinfo:
-    #        locinfo[llstring] = get_weather_data(city=loc)
-
-    # json.dump(locinfo, open("locinfo.json", "w"))
-
-    forecastdict = {"forecasts": {}}
-    for loc in cities:
-        llstring = "%s" % loc
-        forecast = get_weather_data(city=llstring)
-
-        if forecast is not None:
-            forecastdict["forecasts"][loc] = forecast["current"]["temp_f"]
-
-    def search_by_genre(genre):
-        sclient = spotiClient()
-        searchresult = sclient.apiRequest(params={'q': 'genre:' + genre, 'type': 'track', 'limit': 17})
-        return searchresult['tracks']['items']
-
-    genre = 'r&b'
-
-    tracks = search_by_genre(genre)
-    # print(pretty(rnb_tracks))
-
-    track_list = [track(curr_track) for curr_track in tracks]
-
-    track_tempo = []
-
-    for track in track_list:
-        track_tempo_dict = {}
-        track_tempo_dict['id'] = track.id
-        track_tempo_dict['tempo'] = track.get_track_tempo()
-        track_tempo.append(track_tempo_dict)
-
-#    photos_tags_dict_sorted = sorted(photos_tags_dict_keys, key=lambda k: photos_tags_dict[k], reverse=True)
-
-    track_tempo_sorted = sorted(track_tempo, key=lambda k: k['tempo'])
-
-from flask import Flask, render_template, request
-import logging
-app = Flask(__name__)
-
-@app.route("/")
-def main_handler():
-    app.logger.info("In MainHandler")
-    return render_template("weathertemplate.html", page_title ="Weather Form")
-
-def print_weather(cities = {}):
-    for c in cities:
-        dict = get_weather_data(city = c)
-        return(dict["location"]["name"] + " temperature on %s: "%str(dict["location"]["localtime"]) + str(dict["current"]["temp_f"]))
-
+# converts input temperature to an index to match to song in list
 @app.route("/wresponse")
 def weather_response_handler():
-    city = request.args.get("weather")
-    app.logger.info(city)
-    if city:
+    input_city = request.args.get("weather")
+    app.logger.info(input_city)
+    if input_city:
+        dict = get_weather_data(city=input_city)
+        temp = dict["current"]["temp_f"]
+        song_index = 0
+
+        if temp >= -40 and temp < -30:
+            song_index = 1
+        elif temp >= -30 and temp < -20:
+            song_index = 2
+        elif temp >= -20 and temp < -10:
+            song_index = 3
+        elif temp >= -10 and temp < 0:
+            song_index = 4
+        elif temp >= 0 and temp < 10:
+            song_index = 5
+        elif temp >= 10 and temp < 20:
+            song_index = 6
+        elif temp >= 20 and temp < 30:
+            song_index = 7
+        elif temp >= 30 and temp < 40:
+            song_index = 8
+        elif temp >= 40 and temp < 50:
+            song_index = 9
+        elif temp >= 50 and temp < 60:
+            song_index = 10
+        elif temp >= 60 and temp < 70:
+            song_index = 11
+        elif temp >= 70 and temp < 80:
+            song_index = 12
+        elif temp >= 80 and temp < 90:
+            song_index = 13
+        elif temp >= 90 and temp < 100:
+            song_index = 14
+        elif temp >= 100 and temp < 110:
+            song_index = 15
+        elif temp >= 110 and temp < 120:
+            song_index = 16
+
+        genre = 'r&b'
+
+        tracks = search_by_genre(genre)
+        # print(pretty(rnb_tracks))
+
+        track_list = [Track(curr_track) for curr_track in tracks]
+
+        track_tempo = []
+
+        for track in track_list:
+            track_tempo_dict = {}
+            track_tempo_dict['track'] = track
+            track_tempo_dict['tempo'] = track.get_track_tempo()
+            track_tempo.append(track_tempo_dict)
+
+        #    photos_tags_dict_sorted = sorted(photos_tags_dict_keys, key=lambda k: photos_tags_dict[k], reverse=True)
+
+        track_tempo_sorted = sorted(track_tempo, key=lambda k: k['tempo'])
+
+        song = track_tempo_sorted[song_index]['track']
+        print("SONG NAMEMEMEMEMEMEME" + song.name)
+
+        print(track_tempo_sorted)
         return render_template("weathertemplate.html",
-            answer = print_weather(cities = {city}),
-            page_title = "Your Current Weather"
-        )
+                               answer=str(song.name),
+                               page_title="Your Song")
     else:
-        return render_template("weathertemplate.html", page_title = "Weather Form - Error", prompt = "No city entered")
+        return render_template("weathertemplate.html", page_title="Weather Form - Error", prompt="No city entered")
+
+
+# temp = weather_response_handler()
+
+# Note: I put my client id and client secret in secrets.py
+# and told git to ignore that file. You should too.
+
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=8080, debug = True)
+    app.run(host="localhost", port=8080, debug=True)
 
-#import jinja2, os
+# import jinja2, os
 
-#JINJA_ENVIRONMENT = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+# JINJA_ENVIRONMENT = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
 #                                       extensions = ["jinja2.ext.autoescape"],
 #                                       autoescape = True)
 
-#template = JINJA_ENVIRONMENT.get_template("weathertemplate.html")
-#with open("forecast.html", "w") as forecastfile:
+# template = JINJA_ENVIRONMENT.get_template("weathertemplate.html")
+# with open("forecast.html", "w") as forecastfile:
 #    forecastfile.write(template.render(forecastdict))
