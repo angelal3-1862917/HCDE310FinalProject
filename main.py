@@ -1,9 +1,30 @@
-import urllib.request, urllib.error, urllib.parse, json, webbrowser
+import urllib.request, urllib.error, urllib.parse, json, webbrowser, requests
 from flask import Flask, render_template, request
+
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from spotifysecrets import CLIENT_ID, CLIENT_SECRET
 
 app = Flask(__name__)
+
+def one_emoji(emoji_name):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    param_key = {"access_key": "d9dad43868a372189f68abfb1902595f971b52b0"}
+    # emoji_name = "grinning-squinting-face"
+    baseurl = "https://emoji-api.com/emojis/" + emoji_name
+    mypage = requests.get(baseurl, headers=headers, params=param_key)
+    emojis = json.loads(mypage.text)
+    # print(emojis)
+    return emojis
+
+emojiStrings = ['grinning-squinting-face', 'star-struck', 'sleepy-face', 'worried-face', 'angry-face', 'crying-face','face-vomiting', 'sparkling-heart', 'relieved-face']
+
+emojiDict = {}
+for emoji in emojiStrings:
+    emojiDict[emoji] = one_emoji(emoji)[0]['character']
+    emoji_output = one_emoji(emoji)[0]['character']
+    #print(emoji_output)
 
 
 @app.route("/")
@@ -61,16 +82,10 @@ def print_weather(cities={}):
         return (dict["location"]["name"] + " temperature on %s: " % str(dict["location"]["localtime"]) + str(
             dict["current"]["temp_f"]))
 
-
-# locinfo = json.load(open("locinfo.json", "r"))
-# for loc in cities:
-#    llstring = "%s"%loc
-#    if llstring not in locinfo:
-#        locinfo[llstring] = get_weather_data(city=loc)
-
-# json.dump(locinfo, open("locinfo.json", "w"))
-
-
+def print_emoji(emojiStrings = {}):
+    for emoji_face in emojiStrings:
+        emoji_output = one_emoji(emoji_face)[0]['character']
+        return (emoji_output)
 
 class spotiClient():
     # I'm going to create a client class to handle requests to spotify
@@ -276,8 +291,33 @@ def weather_response_handler():
         elif temp >= 110 and temp < 120:
             song_index = 16
 
-        genre = 'r&b'
+        # get emoji input
+        select_emoji = request.args.getlist("emoji_type")
+        app.logger.info(select_emoji)
 
+            # Use emoji faces to return genres
+        print(select_emoji)
+        if select_emoji:
+            genre = ""
+            if select_emoji[0] == "crying-face":
+                genre = "blues"
+            elif select_emoji[0] == "relieved-face":
+                genre = "indie"
+            elif select_emoji[0] == "grinning-squinting-face":
+                genre = "alternative"
+            elif select_emoji[0] == "angry-face":
+                genre = "rap"
+            elif select_emoji[0] == "star-struck":
+                genre = 'pop'
+            elif select_emoji[0] == "worried-face":
+                genre = "grunge"
+            elif select_emoji[0] == "sleepy-face":
+                genre = "classical"
+            elif select_emoji[0] == "sparkling-heart":
+                genre = "r&b"
+
+
+        print('GENREEEEEEE:' + genre)
         tracks = search_by_genre(genre)
         # print(pretty(rnb_tracks))
 
@@ -296,14 +336,15 @@ def weather_response_handler():
         track_tempo_sorted = sorted(track_tempo, key=lambda k: k['tempo'])
 
         song = track_tempo_sorted[song_index]['track']
-        print("SONG NAMEMEMEMEMEMEME" + song.name)
+        print("SONG NAME" + song.name)
 
         print(track_tempo_sorted)
         return render_template("weathertemplate.html",
                                answer=str(song.name),
+                               url = str(song.url),
                                page_title="Your Song")
     else:
-        return render_template("weathertemplate.html", page_title="Weather Form - Error", prompt="No city entered")
+        return render_template("weathertemplate.html", page_title="Weather Form - Error", prompt="No city or emoji entered")
 
 
 # temp = weather_response_handler()

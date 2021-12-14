@@ -19,6 +19,23 @@
 <form action = "wresponse" method = "get">
 	<label for = "weather">Please enter your city:</label>
 	<input type = "text" id = "weather" name = "weather" /><br />
+   <label for = "emoji">Please select one emoji to represent your current mood:</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "grinning-squinting-face" />
+    <label for = "emoji">😆</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "star-struck" />
+    <label for = "emoji">🤩</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "sleepy-face" />
+    <label for = "emoji">😪</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "worried-face" />
+    <label for = "emoji">😟</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "angry-face" />
+    <label for = "emoji">😠</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "crying-face" />
+    <label for = "emoji">😢</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "sparkling-heart" />
+    <label for = "emoji">💖</label><br />
+    <input type = "checkbox" id = "emoji" name = "emoji_type" value = "relieved-face" />
+    <label for = "emoji">😌</label><br />
 	<button type = "submit"> Submit </button>
 </form>
 {% if prompt %}
@@ -26,6 +43,8 @@
 {% endif %}
 {% if answer %}
 <br></br>
-<div class = "answerpage">{{answer}}</div>
+<div class = "answerpage">Your recommended song is: {{answer}}</div>
+<div class = "answerpage">Listen to it here: {{url}}</div>
+
 {% endif %}
 </body></html>
